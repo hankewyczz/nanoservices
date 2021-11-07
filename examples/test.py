@@ -37,6 +37,8 @@ def main(list_size):
     return {'result': A, 'runtime': duration}
 
 
-print(mean((main(500)["runtime"] for _ in range(50))))
 
+runs = (main(500) for _ in range(100))
+runtimes = (result["runtime"] for result in runs)
 
+print(f"Mean runtime: {round(mean(runtimes), 4)}")

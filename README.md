@@ -14,7 +14,9 @@ Massive speed reductions (At least 200% slower or your money back) |
 Doesn't allow the use of classes and global variables |
 Absolutely no way of enforcing signature contracts between functions - just send a GET request and hope for the best | 
 
+## Why?
 
+I was bored
 
 # Format
 
@@ -59,10 +61,9 @@ def main():
 
 Then, each function is converted into a Flask server.
 
-First, we import the dependencies we need for the server, and initialize the server:
+We import the dependencies we need for the server, and initialize the server:
 ```python
-import json
-from flask import Flask, request, jsonify
+# I'll exclude the imports to make this simpler
 
 app = Flask(__name__)
 
@@ -70,9 +71,6 @@ def format_name(name):
   return name.capitalize()
 ```
 ```python
-import json
-from flask import Flask, request, jsonify
-
 app = Flask(__name__)
 
 def main():
@@ -82,9 +80,6 @@ def main():
 Next, we set up a route - when someone sends a `GET` request to `/`, it calls our function
 
 ```python
-import json
-from flask import Flask, request, jsonify
-
 app = Flask(__name__)
 
 @app.route('/', methods=['GET'])
@@ -92,9 +87,6 @@ def format_name(name):
   return name.capitalize()
 ```
 ```python
-import json
-from flask import Flask, request, jsonify
-
 app = Flask(__name__)
 
 @app.route('/', methods=['GET'])
@@ -102,46 +94,30 @@ def main():
   return "Hello, " + format_name("example")
 ```
 
-Now, we replace the arguments. Since we're passing the function arguments inside the `GET` request, we'll have to load the arguments from the request
+Now, we handle function arguments for every function with arguments (in this case, only `format_name`).
+
+Since we call the function via a request, we have to manually grab the arguments from the request, rather than directly from the function. 
 
 ```python
-import json
-from flask import Flask, request, jsonify
-
 app = Flask(__name__)
 
 @app.route('/', methods=['GET'])
 def format_name():
-  name = json.loads(request.args.get('args'))[0]
+  name = json.loads(request.args.get('name'))
   return name.capitalize()
 ```
-```python
-import json
-from flask import Flask, request, jsonify
-
-app = Flask(__name__)
-
-@app.route('/', methods=['GET'])
-def main():
-  return "Hello, " + format_name("example")
-```
+`json.loads()` takes a JSON string, and converts it to a Python object (allowing us to handle the argument as it was passed).
 
 Now, the return value has to be converted to JSON 
 ```python
-import json
-from flask import Flask, request, jsonify
-
 app = Flask(__name__)
 
 @app.route('/', methods=['GET'])
 def format_name():
-  name = json.loads(request.args.get('args'))[0]
+  name = json.loads(request.args.get('name'))
   return jsonify(name.capitalize())
 ```
 ```python
-import json
-from flask import Flask, request, jsonify
-
 app = Flask(__name__)
 
 @app.route('/', methods=['GET'])
@@ -154,34 +130,18 @@ Then, it replaces each function call with a `GET` request.
 
 
 ```python
-import json
-from flask import Flask, request, jsonify
-
-app = Flask(__name__)
-
-@app.route('/', methods=['GET'])
-def format_name():
-  name = json.loads(request.args.get('args'))[0]
-  return jsonify(name.capitalize())
+format_name("example")
 ```
+gets replaced by
 ```python
-import json
-from flask import Flask, request, jsonify
-
-app = Flask(__name__)
-
-@app.route('/', methods=['GET'])
-def main():
-  return jsonify("Hello, " + requests.get(f'http://format_name:5000/?args=["example"]').json())
+requests.get(f'http://format_name:5000/?name={json.dumps("example")}').json()
 ```
 
 To break that down a little:
-- http://format_name refers to a Docker container. Docker containers can query each other by their name, and we name each Docker container after its function
-- The port queried is `5000`, because we run a Flask server in each container (which defaults to `5000`)
-- The arguments list is a little messy:
-  - Instead of refering to the arguments by name, it's easier to just have one argument: `args`
-  - `args` is a list, which contains all of the actual arguments in the order they appear
-  - So, `function(firstname, lastname)` would become `args=[{firstname}, {lastname}]`
+- `http://format_name` refers to a Docker container named `format_name`. Docker containers can call each other by their name, and we name each Docker container after its function
+- We query port `5000`, because that's where the Flask server is running
+- The arguments are parsed thru `json.dumps()`, which converts the argument to valid JSON
+- Finally, we convert the response to JSON via the `.json()` call
 
 
 
@@ -189,27 +149,22 @@ To break that down a little:
 
 Finally, we have to start the app
 ```python
-import json
-from flask import Flask, request, jsonify
-
 app = Flask(__name__)
 
 @app.route('/', methods=['GET'])
 def format_name():
-  name = json.loads(request.args.get('args'))[0]
+  name = json.loads(request.args.get('name'))
   return jsonify(name.capitalize())
 
 app.run(host='0.0.0.0')
 ```
 ```python
-import json
-from flask import Flask, request, jsonify
-
 app = Flask(__name__)
 
 @app.route('/', methods=['GET'])
 def main():
-  return jsonify("Hello, " + requests.get(f'http://format_name:5000/?args=["example"]').json())
+  return jsonify("Hello, " + 
+                requests.get(f'http://format_name:5000/?name={json.dumps("example")}').json())
 
 app.run(host='0.0.0.0')
 ```

@@ -45,13 +45,24 @@ def convert_to_GET(functions):
             for match in re.finditer(pattern, values["code"]):
                 function_call = match.group(0)
 
-                function_args = match.group(1)
-                function_args = function_args.split(',') if function_args else []
-                function_args = "}, {".join([s.strip() for s in function_args])
-                function_args = f'?args=[{{{function_args}}}]'
+                arg_values = match.group(1)
+
+                if arg_values:
+                    arg_values = [arg.strip() for arg in arg_values.split(',')]
+                else:
+                    arg_values = []
+
+                args_lst = []
+                # Map each argument to an argument assignment
+                for i, arg_name in enumerate(functions[func2]['args']):
+                    args_lst.append(f"{arg_name}={{json.dumps({arg_values[i]})}}")
+
+                # Convert to a URL string
+                arg_values = "&".join(args_lst)
+                arg_values = "?" + arg_values
 
                 # Replace it with a get request
-                get_request = f"requests.get(f'''http://{func2}:5000{function_args}''').json()"
+                get_request = f"requests.get(f'''http://{func2}:5000{arg_values}''').json()"
                 values["code"] = values["code"].replace(function_call.rstrip(), get_request)
 
 
@@ -67,8 +78,8 @@ app = Flask(__name__)
     code = re.sub(f"{name}\(.*\)", f"{name}()", function["code"])
 
     init_args = []
-    for i, arg in enumerate(function["args"]):
-        init_args.append(f"    {arg} = json.loads(request.args.get('args'))[{i}]")
+    for arg in function["args"]:
+        init_args.append(f"    {arg} = json.loads(request.args.get('{arg}'))")
 
     code = '\n'.join(init_args) + '\n' + code
 
@@ -109,7 +120,7 @@ services:
             docker_compose += f"""
         ports:
             - target: 5000
-              published: 8081
+              published: 5000
               protocol: tcp"""
 
     with open(path / "docker-compose.yml", 'w', encoding='utf8') as f:
@@ -142,9 +153,10 @@ def import_file(filename: str) -> str:
         return parser.standardize_input(f.read())
 
 
-def main():
-    in_str = import_file('examples/test.py')
+def main(filename: str):
+    in_str = import_file(filename)
     parse_program(in_str)
 
 
-main()
+main('examples/test.py')
+# main('examples/helloworld.py')
