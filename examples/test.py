@@ -39,3 +39,4 @@ def main(list_size):
 
 print(mean((main(500)["runtime"] for _ in range(50))))
 
+

@@ -1,10 +1,8 @@
-import json
 import os
 import re
 import shutil
 from pathlib import Path
 import parse as parser
-from typing import Dict, List, Tuple, Set
 
 DOCKERFILE = """
 # Base Image 
