@@ -2,7 +2,7 @@
 
 ## What's a nanoservice?
 
-It's like a microservice, but smaller (and therefore better).
+It's like a microservice, but smaller (and therefore better). Instead of breaking a program into microservices, where each service is an independent component, a nanoservice is literally just one function. Each function is converted into a standalone web-server, is deployed via a Docker container, and can be called via `GET` requests.
 
 ## Why use nanoservices?
 
@@ -16,7 +16,7 @@ Absolutely no way of enforcing signature contracts between functions - just send
 
 ## Why?
 
-I was bored
+This was made as a joke after sitting through a LOT of all-hands meetings discussing converting a monolithic program to microservices. 
 
 # Format
 
